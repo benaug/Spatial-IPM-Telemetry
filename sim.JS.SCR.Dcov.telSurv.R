@@ -107,7 +107,6 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   #deploy collars to bears captured in marking process
   mark.caps <- 1*apply(y1,c(1,2),sum)
   tel.z.states <- z*NA
-  col.lifes <- vector("list",n.year)
   #observed data, not true states (because we don't know if dead)
   eligible.states <- matrix(1,N.super,n.year) #eligible based on tel.z.states collaring history, may be dead and eligible
   tel.ID.g <- vector("list",n.year)
@@ -124,7 +123,6 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
           }
         }
       }
-      tel.ID.g[[g]] <- collar.g
     }
   }
   #switch states to observed deaths when z==0 
@@ -136,33 +134,47 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
       tel.z.states[i,max(idx):n.year] <- 0
     }
   }
-  #simulate telemetry locations
-  if(n.tel.locs>0&sum(y1)>0){
-    n.tel.years <- rowSums(tel.z.states==1,na.rm=TRUE)
-    tel.ID <- which(n.tel.years>0)
-    n.tel.years <- n.tel.years[tel.ID]
-    n.tel.inds <- sum(n.tel.years>0)
-    tel.year <- matrix(NA,n.tel.inds,n.year)
-    max.n.tel.years <- max(n.tel.years)
-    locs <- array(NA,dim=c(n.tel.inds,max.n.tel.years,n.tel.locs,2))
-    for(i in 1:n.tel.inds){
-      tel.year[i,1:n.tel.years[i]] <- which(tel.z.states[tel.ID[i],]==1)
-      for(g in 1:n.tel.years[i]){
-        #if adding movement, reference correct s years
-        locs[i,g,,] <- c(rnorm(n.tel.locs,s[tel.ID[i],1],sigma[tel.year[i,g]]),
-                         rnorm(n.tel.locs,s[tel.ID[i],2],sigma[tel.year[i,g]]))
-      }
+  #populate tel.ID.g from tel.z.states - includes carryover years
+  for(g in 1:n.year){
+    collared.g <- which(tel.z.states[,g]==1)
+    if(length(collared.g)>0){
+      tel.ID.g[[g]] <- collared.g
     }
-    n.locs.ind <- apply(!is.na(locs[,,,1]),c(1,2),sum)
-    if(dim(locs)[2]==1){
-      n.locs.ind <- matrix(rowSums(n.locs.ind),ncol=1)
+  }
+  
+  #simulate telemetry locations for all collared years
+  if(n.tel.locs>0&sum(y1)>0){
+    n.tel.years.vec <- rowSums(tel.z.states==1,na.rm=TRUE)
+    tel.ID <- which(n.tel.years.vec>0)
+    n.tel.inds <- length(tel.ID)
+    if(n.tel.inds>0){
+      n.tel.years <- n.tel.years.vec[tel.ID] #length n.tel.inds
+      max.n.tel.years <- max(n.tel.years)
+      locs <- array(NA,dim=c(n.tel.inds,max.n.tel.years,n.tel.locs,2))
+      n.locs.ind <- matrix(0,n.tel.inds,max.n.tel.years)
+      tel.year <- matrix(NA,n.tel.inds,max.n.tel.years)
+      for(i in 1:n.tel.inds){
+        collared.years <- which(tel.z.states[tel.ID[i],]==1)
+        tel.year[i,1:length(collared.years)] <- collared.years
+        for(gy in 1:length(collared.years)){
+          g <- collared.years[gy]
+          locs[i,gy,1:n.tel.locs,1] <- rnorm(n.tel.locs,s[tel.ID[i],1],sigma[g])
+          locs[i,gy,1:n.tel.locs,2] <- rnorm(n.tel.locs,s[tel.ID[i],2],sigma[g])
+          n.locs.ind[i,gy] <- n.tel.locs
+        }
+      }
+    }else{
+      locs <- tel.ID <- tel.year <- NA
+      n.tel.inds <- 0
+      n.locs.ind <- NA
+      n.tel.years <- NA
     }
   }else{
     print("no individuals captured, no telemetry")
     locs <- tel.ID <- tel.year <- NA
     n.tel.inds <- 0
-    n.tel.years <- NA
     n.locs.ind <- NA
+    n.tel.years <- NA
   }
 
   #store true data for model building/debugging
@@ -190,7 +202,7 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   }
   
   return(list(y1=y1,y2=y2,N=N,N.recruit=N.recruit,N.survive=N.survive,
-              X1=X1,X2=X2,K1=K1,K2=K2,n.year=n.year,
+              X1=X1,X2=X2,J1=J1,J2=J2,K1=K1,K2=K2,n.year=n.year,
               tel.z.states=tel.z.states,locs=locs,n.tel.inds=n.tel.inds,n.tel.years=n.tel.years,
               n.locs.ind=n.locs.ind,tel.ID=tel.ID,tel.ID.g=tel.ID.g,tel.year=tel.year,
               xlim=xlim,ylim=ylim,x.vals=x.vals,y.vals=y.vals,dSS=dSS,cells=cells,

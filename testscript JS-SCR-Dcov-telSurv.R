@@ -25,6 +25,7 @@ sigma <- rep(0.5,n.year) #yearly detection function scale
 K1 <- c(0,2,0,0,2,0,0) #yearly sampling occasions, telemetry capture process
 K2 <- c(5,0,0,5,0,0,5) #yearly sampling occasions, SCR detection process
 if(length(K1)!=length(K2))stop("K1 and K2 must be same length")
+if(length(K1)!=n.year)stop("K1 and K2 must be of length n.year")
 
 #Make some traps
 #Need to make both X1 and X2, the trap locations for method 1 and method 2
@@ -147,23 +148,62 @@ colSums(apply(data$y1>0,c(1,2),sum)>0) #collars deployed per year
 colSums(data$tel.z.states==1,na.rm=TRUE) #collars active per year
 
 #visualize realized activity centers
-image(x.vals,y.vals,matrix(lambda.cell,n.cells.x,n.cells.y),main="Expected Density")
+image(x.vals,y.vals,matrix(lambda.cell,n.cells.x,n.cells.y),main="Expected Density",col=cols1)
 points(X1.all,pch=4,lwd=2) #method 1
 points(X2.all,pch=4,lwd=2,col="darkred") #method 2
 points(data$truth$s,pch=16)
 
-#visualize telemetry
-# plot(X.all,xlim=xlim,ylim=ylim,pch=4)
-# for(i in 1:data$n.tel.inds){
-#   for(g in 1:data$n.tel.years[i]){
-#     for(l in 1:data$n.locs.ind[i,g]){
-#       lines(x=c(data$s[data$tel.ID[i],1],data$locs[i,g,l,1]),
-#             y=c(data$s[data$tel.ID[i],2],data$locs[i,g,l,2]),col="gray80")
-#     }
-#   }
-#   points(data$locs[i,,,1],data$locs[i,,,2],pch=16,cex=0.5,col="lightblue")
-#   points(data$s[data$tel.ID[i],1],data$s[data$tel.ID[i],2],pch=16,col="darkblue")
-# }
+#visualize detections and telemetry by year
+#note, if X1 and X2 traps are the same X2 will plot over X1
+n <- nrow(data$y1)
+for(g in 1:n.year){
+  image(data$x.vals,data$y.vals,matrix(data$D.cov*data$InSS,data$n.cells.x,data$n.cells.y),
+        main=paste("Year",g),xlab="X",ylab="Y",col=cols1)
+  if(data$K1[g]>0){
+    points(data$X1[[g]],pch=4,lwd=2)
+  }
+  if(data$K2[g]>0){
+    points(data$X2[[g]],pch=4,lwd=2,col="darkred")
+  }
+  points(data$truth$s[data$truth$z[,g]==1,1],data$truth$s[data$truth$z[,g]==1,2],pch=16) #activity centers
+  for(i in 1:n){
+    trapcaps <- which(data$y1[i,g,]>0)
+    traps <-  data$X1[[g]][1:data$J1[g],][trapcaps,]
+    trapcaps2 <- which(data$y2[i,g,]>0)
+    traps2 <-  data$X2[[g]][1:data$J2[g],][trapcaps2,]
+    traps <- rbind(traps,traps2)
+    if(nrow(traps)>0){
+      s <- data$s[i,]
+      points(s[1],s[2],col="goldenrod",pch=16)
+      if(nrow(traps)>0){
+        for(j in 1:nrow(traps)){
+          lines(x=c(s[1],traps[j,1]),y=c(s[2],traps[j,2]),col="goldenrod")
+        }
+      }
+    }
+  }
+  if(!any(is.null(data$tel.ID.g[[g]]))){
+    for(i in 1:length(data$tel.ID.g[[g]])){
+      kept.idx <- data$tel.ID.g[[g]][i]  # kept individual index
+      tel.idx <- which(data$tel.ID==kept.idx)  # position in tel.ID vector
+      if(length(tel.idx)>0){
+        s <- data$s[kept.idx,]
+        # find which telemetry year index corresponds to year g
+        tel.g.idx <- which(data$tel.year[tel.idx,]==g)
+        if(length(tel.g.idx)>0){
+          for(l in 1:data$n.locs.ind[tel.idx,tel.g.idx]){
+            lines(x=c(s[1],data$locs[tel.idx,tel.g.idx,l,1]),
+                  y=c(s[2],data$locs[tel.idx,tel.g.idx,l,2]),col="gray80")
+          }
+          points(data$locs[tel.idx,tel.g.idx,,1],
+                 data$locs[tel.idx,tel.g.idx,,2],
+                 pch=16,cex=0.5,col="lightblue")
+          points(s[1],s[2],col="darkblue",pch=16)
+        }
+      }
+    }
+  }
+}
 
 data$truth$N.super #N.super
 
@@ -207,6 +247,7 @@ n.cells.x <- data$n.cells.x
 n.cells.y <- data$n.cells.y
 
 #can plot initialized ACs with telemetry for sanity check
+#I should change this to plot by session and link ACs to traps
 # plot(X.all,xlim=xlim,ylim=ylim,pch=4)
 # for(i in 1:data$n.tel.inds){
 #   for(g in 1:data$n.tel.years[i]){
