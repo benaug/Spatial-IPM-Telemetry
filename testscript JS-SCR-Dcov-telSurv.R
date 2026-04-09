@@ -279,7 +279,8 @@ constants <- list(n.year=n.year,M=M,J1=J1,J2=J2,K1D1=nimbuild$K1D1,K1D2=nimbuild
 Niminits <- list(N=nimbuild$N,N.survive=nimbuild$N.survive,N.recruit=nimbuild$N.recruit,
                  ER=nimbuild$N.recruit,N.super=nimbuild$N.super,z.super=nimbuild$z.super,
                  z=nimbuild$z,z.start=nimbuild$z.start,z.stop=nimbuild$z.stop,
-                 s=nimbuild$s,D0=nimbuild$N[1]/(sum(InSS)*res^2),D.beta1=0)
+                 s=nimbuild$s,D0=nimbuild$N[1]/(sum(InSS)*res^2),D.beta1=0,
+                 p01=inits$p01[sampled.years.m1],p02=inits$p02[sampled.years.m2],sigma.fixed=inits$sigma[1])
 
 #data for Nimble
 dummy.data <- rep(0,M) #dummy data not used, doesn't really matter what the values are

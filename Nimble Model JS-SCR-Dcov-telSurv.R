@@ -61,13 +61,13 @@ NimModel <- nimbleCode({
   }
   #Method 1 - only loop over sampled years
   for(g in 1:n.sampled.m1){
-    p01[sampled.years.m1[g]] ~ dunif(0,1)#p01 varies by year
+    p01[g] ~ dunif(0,1)#p01 varies by year
     for(i in 1:M){
       pd1[i,sampled.years.m1[g],
           1:J1[sampled.years.m1[g]]] <- GetDetectionProb(s=s[i,1:2],
                                                          X=X1[sampled.years.m1[g],1:J1[sampled.years.m1[g]],1:2],
                                                          J=J1[sampled.years.m1[g]],sigma=sigma[sampled.years.m1[g]],
-                                                         p0=p01[sampled.years.m1[g]],z=z[i,sampled.years.m1[g]],
+                                                         p0=p01[g],z=z[i,sampled.years.m1[g]],
                                                          z.super=z.super[i])
       y1[i,sampled.years.m1[g],
          1:J1[sampled.years.m1[g]]] ~ dBinomialVector(pd=pd1[i,sampled.years.m1[g],1:J1[sampled.years.m1[g]]],
@@ -78,13 +78,13 @@ NimModel <- nimbleCode({
   
   #Method 2 - only loop over sampled years
   for(g in 1:n.sampled.m2){
-    p02[sampled.years.m2[g]] ~ dunif(0,1) #p02 varies by year
+    p02[g] ~ dunif(0,1) #p02 varies by year
     for(i in 1:M){
       pd2[i,sampled.years.m2[g],
           1:J2[sampled.years.m2[g]]] <- GetDetectionProb(s=s[i,1:2],
                                                          X=X2[sampled.years.m2[g],1:J2[sampled.years.m2[g]],1:2],
                                                          J=J2[sampled.years.m2[g]],sigma=sigma[sampled.years.m2[g]],
-                                                         p0=p02[sampled.years.m2[g]],z=z[i,sampled.years.m2[g]],
+                                                         p0=p02[g],z=z[i,sampled.years.m2[g]],
                                                          z.super=z.super[i])
       y2[i,sampled.years.m2[g],
          1:J2[sampled.years.m2[g]]] ~ dBinomialVector(pd=pd2[i,sampled.years.m2[g],1:J2[sampled.years.m2[g]]],
