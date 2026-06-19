@@ -21,16 +21,16 @@ init.Spatial.IPM <- function(data,inits=NA,M=NA){
   cells <- data$cells
   res <- data$res
   InSS <- data$InSS
-  y1 <- array(0,dim=c(M,n.year,J1.max))
-  y1[1:n,1:n.year,1:J1.max] <- data$y1 #all these guys must be observed
-  y2 <- array(0,dim=c(M,n.year,J2.max))
-  y2[1:n,1:n.year,1:J2.max] <- data$y2 #all these guys must be observed
-  tel.z.states <- matrix(2,M,n.year)
+  y1 <- array(0,dim=c(M,n.primary,J1.max))
+  y1[1:n,1:n.primary,1:J1.max] <- data$y1 #all these guys must be observed
+  y2 <- array(0,dim=c(M,n.primary,J2.max))
+  y2[1:n,1:n.primary,1:J2.max] <- data$y2 #all these guys must be observed
+  tel.z.states <- matrix(2,M,n.primary)
   tel.z.states[1:n,] <- data$tel.z.states
   tel.z.states[is.na(tel.z.states)] <- 2  #use 2 to code NA for nimble function
   
   #initialize z objects
-  z.init <- matrix(0,M,n.year)
+  z.init <- matrix(0,M,n.primary)
   z.start.init <- z.stop.init <- rep(0,M)
   y12D <- apply(y1,c(1,2),sum)
   y22D <- apply(y2,c(1,2),sum)
@@ -57,8 +57,8 @@ init.Spatial.IPM <- function(data,inits=NA,M=NA){
   
   #initialize N structures from z.init
   N.init <- colSums(z.init[z.super.init==1,])
-  N.survive.init <- N.recruit.init <- rep(NA,n.year-1)
-  for(g in 2:n.year){
+  N.survive.init <- N.recruit.init <- rep(NA,n.primary-1)
+  for(g in 2:n.primary){
     N.survive.init[g-1] <- sum(z.init[,g-1]==1&z.init[,g]==1&z.super.init==1)
     N.recruit.init[g-1] <- N.init[g]-N.survive.init[g-1]
   }
@@ -66,11 +66,11 @@ init.Spatial.IPM <- function(data,inits=NA,M=NA){
   #remaining SCR stuff to initialize
   #put X in ragged array
   #also make K1D, year by trap operation history, as ragged array.
-  X1.nim <- array(0,dim=c(n.year,J1.max,2))
-  K1D1 <- matrix(0,n.year,J1.max)
-  X2.nim <- array(0,dim=c(n.year,J2.max,2))
-  K1D2 <- matrix(0,n.year,J2.max)
-  for(g in 1:n.year){
+  X1.nim <- array(0,dim=c(n.primary,J1.max,2))
+  K1D1 <- matrix(0,n.primary,J1.max)
+  X2.nim <- array(0,dim=c(n.primary,J2.max,2))
+  K1D2 <- matrix(0,n.primary,J2.max)
+  for(g in 1:n.primary){
     X1.nim[g,1:J1[g],1:2] <- X1[[g]]
     K1D1[g,1:J1[g]] <- rep(K1[g],J1[g])
     X2.nim[g,1:J2[g],1:2] <- X2[[g]]
@@ -83,7 +83,7 @@ init.Spatial.IPM <- function(data,inits=NA,M=NA){
   idx <- sort(unique(c(idx,data$tel.ID))) #add telemetry individuals
   for(i in idx){
     trps <- matrix(0,nrow=0,ncol=2) #get locations of traps of capture across years for ind i
-    for(g in 1:n.year){
+    for(g in 1:n.primary){
       if(sum(y1[i,g,])>0){
         trps.g <- matrix(X1.nim[g,which(y1[i,g,]>0),],ncol=2,byrow=FALSE)
         trps <- rbind(trps,trps.g)
@@ -136,7 +136,7 @@ init.Spatial.IPM <- function(data,inits=NA,M=NA){
   }
   
   #check starting logProbs one session at a time
-  for(g in 1:n.year){
+  for(g in 1:n.primary){
     #marking process
     D1 <- e2dist(s.init, X1.nim[g,1:J1[g],])
     pd1 <- p01[g]*exp(-D1*D1/(2*sigma[g]*sigma[g]))

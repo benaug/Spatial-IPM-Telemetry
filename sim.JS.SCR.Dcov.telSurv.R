@@ -12,13 +12,13 @@ rtruncpois <- function(n,lambda,lower=0,upper=Inf){
 }
 
 sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
-                                    gamma=NA,n.year=NA,phi=NA,
+                                    gamma=NA,n.primary=NA,phi=NA,
                                     p01=NA,p02=NA,sigma=NA,X1=NA,X2=NA,buff=buff,K1=NA,K2=NA,xlim=NA,ylim=NA,res=NA,
                                     n.tel.locs=NA,col.year.pars=NA,col.protocol=NA){
   if(col.year.pars[2]<1)stop("col.year.par[2] must be 1 or larger")
   #Population dynamics
-  N <- rep(NA,n.year)
-  N.recruit <- N.survive <- ER <- rep(NA,n.year-1)
+  N <- rep(NA,n.primary)
+  N.recruit <- N.survive <- ER <- rep(NA,n.primary-1)
   #get expected N in year 1 from D.cov parameters
   cellArea <- res^2
   lambda.cell <- InSS*exp(D.beta0 + D.beta1*D.cov)*cellArea
@@ -36,21 +36,21 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   n.cells.y <- length(y.vals)
 
   #Easiest to increase dimension of z as we simulate bc size not known in advance.
-  z <- matrix(0,N[1],n.year)
+  z <- matrix(0,N[1],n.primary)
   z[1:N[1],1] <- 1
   cov <- rnorm(N[1],0,1) #simulate ind survival covariate for 1st year guys
-  phi.mat <- matrix(NA,N[1],n.year-1)
-  for(g in 2:n.year){
+  phi.mat <- matrix(NA,N[1],n.primary-1)
+  for(g in 2:n.primary){
     #Simulate recruits
     ER[g-1] <- N[g-1]*gamma[g-1]
     N.recruit[g-1] <- rpois(1,ER[g-1])
     if(N.recruit[g-1]>0){
       #add recruits to z
       z.dim.old <- nrow(z)
-      z <- rbind(z,matrix(0,nrow=N.recruit[g-1],ncol=n.year))
+      z <- rbind(z,matrix(0,nrow=N.recruit[g-1],ncol=n.primary))
       z[(z.dim.old+1):(z.dim.old+N.recruit[g-1]),g] <- 1
       #and to phi matrix
-      phi.mat <- rbind(phi.mat,matrix(NA,nrow=N.recruit[g-1],ncol=n.year-1))
+      phi.mat <- rbind(phi.mat,matrix(NA,nrow=N.recruit[g-1],ncol=n.primary-1))
     }
     phi.mat[,g-1] <- phi[g-1]
     idx <- which(z[,g-1]==1)
@@ -59,7 +59,7 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
     N[g] <- N.recruit[g-1]+N.survive[g-1]
   }
 
-  if(any(N.recruit+N.survive!=N[2:n.year]))stop("Simulation bug")
+  if(any(N.recruit+N.survive!=N[2:n.primary]))stop("Simulation bug")
   if(any(colSums(z)!=N))stop("Simulation bug")
 
   #detection
@@ -82,9 +82,9 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
     s[i,2] <- runif(1,s.ylim[1],s.ylim[2])
   }
 
-  pd1 <- y1 <- array(0,dim=c(N.super,n.year,J1.max))
-  pd2 <- y2 <- array(0,dim=c(N.super,n.year,J2.max))
-  for(g in 1:n.year){
+  pd1 <- y1 <- array(0,dim=c(N.super,n.primary,J1.max))
+  pd2 <- y2 <- array(0,dim=c(N.super,n.primary,J2.max))
+  for(g in 1:n.primary){
     #marking (collar deployment) capture process
     D1 <- e2dist(s,X1[[g]])
     pd1[,g,1:J1[g]] <- p01[g]*exp(-D1*D1/(2*sigma[g]^2))
@@ -108,17 +108,17 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   mark.caps <- 1*apply(y1,c(1,2),sum)
   tel.z.states <- z*NA
   #observed data, not true states (because we don't know if dead)
-  eligible.states <- matrix(1,N.super,n.year) #eligible based on tel.z.states collaring history, may be dead and eligible
-  tel.ID.g <- vector("list",n.year)
-  for(g in 1:n.year){
+  eligible.states <- matrix(1,N.super,n.primary) #eligible based on tel.z.states collaring history, may be dead and eligible
+  tel.ID.g <- vector("list",n.primary)
+  for(g in 1:n.primary){
     collar.g <- which(mark.caps[,g]>0&eligible.states[,g]==1)
     if(length(collar.g)>0){
       for(i in collar.g){
         col.life <- rtruncpois(1,lambda=col.year.pars[1],lower=col.year.pars[2],upper=col.year.pars[3])
-        end.year <- min(g+col.life-1,n.year)
+        end.year <- min(g+col.life-1,n.primary)
         tel.z.states[i,g:end.year] <- 1
         if(col.life>1&col.protocol==1){ #if we don't replace collars on capture, make ineligible
-          if(g<n.year){
+          if(g<n.primary){
             eligible.states[i,(g+1):end.year] <- 0
           }
         }
@@ -131,11 +131,11 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   for(i in 1:N.super){
     idx <- which(tel.z.states[i,]==0)
     if(length(idx)>0){
-      tel.z.states[i,max(idx):n.year] <- 0
+      tel.z.states[i,max(idx):n.primary] <- 0
     }
   }
   #populate tel.ID.g from tel.z.states - includes carryover years
-  for(g in 1:n.year){
+  for(g in 1:n.primary){
     collared.g <- which(tel.z.states[,g]==1)
     if(length(collared.g)>0){
       tel.ID.g[[g]] <- collared.g
@@ -182,7 +182,7 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
                 N.super=N[1]+sum(N.recruit),z=z,s=s,s.cell=s.cell)
 
   #discard undetected or untelemetered individuals
-  y.all <- apply(y1,c(1,2),sum) + apply(y2,c(1,2),sum) #N x n.year
+  y.all <- apply(y1,c(1,2),sum) + apply(y2,c(1,2),sum) #N x n.primary
   y.all[tel.z.states==1] <- 1 #add telemetry observation
   
   keep.idx <- which(rowSums(y.all)>0)
@@ -195,14 +195,14 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   
   #renumber tel.ID
   tel.ID <- match(tel.ID,keep.idx)
-  for(g in 1:n.year){
+  for(g in 1:n.primary){
     if(length(tel.ID.g[[g]])>0){
       tel.ID.g[[g]] <- match(tel.ID.g[[g]],keep.idx)
     }
   }
   
   return(list(y1=y1,y2=y2,N=N,N.recruit=N.recruit,N.survive=N.survive,
-              X1=X1,X2=X2,J1=J1,J2=J2,K1=K1,K2=K2,n.year=n.year,
+              X1=X1,X2=X2,J1=J1,J2=J2,K1=K1,K2=K2,n.primary=n.primary,
               tel.z.states=tel.z.states,locs=locs,n.tel.inds=n.tel.inds,n.tel.years=n.tel.years,
               n.locs.ind=n.locs.ind,tel.ID=tel.ID,tel.ID.g=tel.ID.g,tel.year=tel.year,
               xlim=xlim,ylim=ylim,x.vals=x.vals,y.vals=y.vals,dSS=dSS,cells=cells,

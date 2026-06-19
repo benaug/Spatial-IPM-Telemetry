@@ -12,16 +12,16 @@ NimModel <- nimbleCode({
   ##Abundance##
   lambda.y1 <- D.intercept*pi.denom #Expected starting population size
   N[1] ~ dpois(lambda.y1) #Realized starting population size
-  for(g in 2:n.year){
+  for(g in 2:n.primary){
     N[g] <- N.survive[g-1] + N.recruit[g-1] #yearly abundance
     #N.recruit and N.survive information also contained in z/z.start + z.stop
     #N.recruit has distributions assigned below, but survival distributions defined on z
   }
-  N.super <- N[1] + sum(N.recruit[1:(n.year-1)]) #size of superpopulation
+  N.super <- N[1] + sum(N.recruit[1:(n.primary-1)]) #size of superpopulation
   
   #Recruitment
   gamma.fixed ~ dunif(0,2)
-  for(g in 1:(n.year-1)){
+  for(g in 1:(n.primary-1)){
     #gamma[g] ~ dunif(0,2) #yearly recruitment priors
     gamma[g] <- gamma.fixed #fixed recruitment rate
     ER[g] <- N[g]*gamma[g] #yearly expected recruits
@@ -37,25 +37,25 @@ NimModel <- nimbleCode({
     dummy.data[i] ~ dCell(pi.cell[s.cell[i]]) #categorical likelihood for this cell, equivalent to zero's trick
   }
   
-  #Survival (phi must have M x n.year - 1 dimension for custom updates to work)
+  #Survival (phi must have M x n.primary - 1 dimension for custom updates to work)
   #without individual or year effects, use for loop to plug into phi[i,g]
   phi.fixed ~ dunif(0,1)
   for(i in 1:M){
     #phi[g] ~ dunif(0,1) #yearly survival priors
-    for(g in 1:(n.year-1)){#plugging same individual phi's into each year for custom update
+    for(g in 1:(n.primary-1)){#plugging same individual phi's into each year for custom update
       phi[i,g] <- phi.fixed
     }
     #survival likelihood (bernoulli) that only sums from z.start to z.stop
-    z[i,1:n.year] ~ dSurvival(phi=phi[i,1:(n.year-1)],z.start=z.start[i],z.stop=z.stop[i],z.super=z.super[i])
+    z[i,1:n.primary] ~ dSurvival(phi=phi[i,1:(n.primary-1)],z.start=z.start[i],z.stop=z.stop[i],z.super=z.super[i])
     #telemetry survival likelihood
     #fixes z states, 1=known alive, 0=known dead, NA=unknown
     #currently assumes censoring is uninformative
-    tel.z.states[i,1:n.year] ~ dSurvivalTel(z=z[i,1:n.year],z.super=z.super[i])
+    tel.z.states[i,1:n.primary] ~ dSurvivalTel(z=z[i,1:n.primary],z.super=z.super[i])
   }
   
   ##Detection##
   sigma.fixed ~ dunif(0,10)
-  for(g in 1:n.year){ #sigma informed by data except in years with no capture effort and no telemetry
+  for(g in 1:n.primary){ #sigma informed by data except in years with no capture effort and no telemetry
     # sigma[g] ~ dunif(0,10) #sigma varies by year, shared across methods
     sigma[g] <- sigma.fixed #sigma fixed across years, shared across methods
   }

@@ -14,34 +14,34 @@ cols1 <- brewer.pal(9,"Greens")
 #must run this line 
 nimbleOptions(determinePredictiveNodesInModel = FALSE)
 
-n.year <- 7 #number of years
-gamma <- rep(0.2,n.year-1) #yearly per-capita recruitment
-phi <- rep(0.8,n.year-1) #yearly survival
-p01 <- rep(0.1,n.year) #yearly detection probabilities at activity center, telemetry capture
-p02 <- rep(0.1,n.year) #yearly detection probabilities at activity center, SCR capture
-sigma <- rep(0.5,n.year) #yearly detection function scale
+n.primary <- 7 #number of years
+gamma <- rep(0.2,n.primary-1) #yearly per-capita recruitment
+phi <- rep(0.8,n.primary-1) #yearly survival
+p01 <- rep(0.1,n.primary) #yearly detection probabilities at activity center, telemetry capture
+p02 <- rep(0.1,n.primary) #yearly detection probabilities at activity center, SCR capture
+sigma <- rep(0.5,n.primary) #yearly detection function scale
 #Number of occasions per year per method
 #to skip sampling by a method in a year, set its K=0
 K1 <- c(0,2,0,0,2,0,0) #yearly sampling occasions, telemetry capture process
 K2 <- c(5,0,0,5,0,0,5) #yearly sampling occasions, SCR detection process
 if(length(K1)!=length(K2))stop("K1 and K2 must be same length")
-if(length(K1)!=n.year)stop("K1 and K2 must be of length n.year")
+if(length(K1)!=n.primary)stop("K1 and K2 must be of length n.primary")
 
 #Make some traps
 #Need to make both X1 and X2, the trap locations for method 1 and method 2
-X1 <- vector("list",n.year) #one trapping array per year
-for(g in 1:n.year){ #using same trapping array every year here
+X1 <- vector("list",n.primary) #one trapping array per year
+for(g in 1:n.primary){ #using same trapping array every year here
   X1[[g]] <- as.matrix(expand.grid(3:11,3:11))
 }
-X2 <- vector("list",n.year) #one trapping array per year
-for(g in 1:n.year){ #using same trapping array every year here
+X2 <- vector("list",n.primary) #one trapping array per year
+for(g in 1:n.primary){ #using same trapping array every year here
   X2[[g]] <- as.matrix(expand.grid(3:11,3:11))
 }
 
 ## Habitat covariate stuff##
 #buffer maximal trap extent
 X1.all <- X2.all <- matrix(NA,nrow=0,ncol=2)
-for(g in 1:n.year){
+for(g in 1:n.primary){
   X1.all <- rbind(X1.all,X1[[g]])
   X2.all <- rbind(X2.all,X2[[g]])
 }
@@ -58,7 +58,7 @@ x.shift <- xlim[1]
 y.shift <- ylim[1]
 xlim <- xlim-x.shift
 ylim <- ylim-y.shift
-for(g in 1:n.year){
+for(g in 1:n.primary){
   X1[[g]][,1] <- X1[[g]][,1]-x.shift
   X1[[g]][,2] <- X1[[g]][,2]-y.shift
   X2[[g]][,1] <- X2[[g]][,1]-x.shift
@@ -124,15 +124,15 @@ col.protocol <- 1
 #simulate some data
 set.seed(133455) #change seed for new data set
 data <- sim.JS.SCR.Dcov.telSurv(D.beta0=D.beta0,D.beta1=D.beta1,D.cov=D.cov,InSS=InSS,
-                                gamma=gamma,n.year=n.year,phi=phi,p01=p01,p02=p02,
+                                gamma=gamma,n.primary=n.primary,phi=phi,p01=p01,p02=p02,
                                 sigma=sigma,X1=X1,X2=X2,,K1=K1,K2=K2,xlim=xlim,ylim=ylim,res=res,
                                 n.tel.locs=n.tel.locs,col.year.pars=col.year.pars,col.protocol)
 
 #what is observed data
-# str(data$y1) #method 1 capture history: n x n.year x J1
-# str(data$y2) #method 2 detection history: n x n.year x J2
-# str(data$tel.z.states) #telemetry survival observations: n x n.year
-# str(data$locs) #telemetry locations: n.tel.inds x n.year x n.tel.locs x 2
+# str(data$y1) #method 1 capture history: n x n.primary x J1
+# str(data$y2) #method 2 detection history: n x n.primary x J2
+# str(data$tel.z.states) #telemetry survival observations: n x n.primary
+# str(data$locs) #telemetry locations: n.tel.inds x n.primary x n.tel.locs x 2
 
 #inds captured by method
 colSums(apply(data$y1,c(1,2),sum)>0)
@@ -156,7 +156,7 @@ points(data$truth$s,pch=16)
 #visualize detections and telemetry by year
 #note, if X1 and X2 traps are the same X2 will plot over X1
 n <- nrow(data$y1)
-for(g in 1:n.year){
+for(g in 1:n.primary){
   image(data$x.vals,data$y.vals,matrix(data$D.cov*data$InSS,data$n.cells.x,data$n.cells.y),
         main=paste("Year",g),xlab="X",ylab="Y",col=cols1)
   if(data$K1[g]>0){
@@ -222,7 +222,7 @@ if(n > M) stop("Must augment more than number of individuals captured")
 #initialize N and z objects and activity centers
 #Use reasonable inits for p0, lam0, and sigma since we check to make sure initial observation
 #model likelihood is finite. initializing with 1 parameter per session, just set all to same value
-inits <- list(p01=rep(0.1,n.year),p02=rep(0.1,n.year),sigma=rep(0.5,n.year))
+inits <- list(p01=rep(0.1,n.primary),p02=rep(0.1,n.primary),sigma=rep(0.5,n.primary))
 nimbuild <- init.Spatial.IPM(data,inits,M=M)
 
 #pull these from data (won't be in environment if not simulated directly above)
@@ -268,7 +268,7 @@ n.sampled.m2 <- length(sampled.years.m2)
 
 #constants for Nimble
 #might want to center D.cov here. Simulated D.cov in this testscript is already effectively centered.
-constants <- list(n.year=n.year,M=M,J1=J1,J2=J2,K1D1=nimbuild$K1D1,K1D2=nimbuild$K1D2,
+constants <- list(n.primary=n.primary,M=M,J1=J1,J2=J2,K1D1=nimbuild$K1D1,K1D2=nimbuild$K1D2,
                   xlim=xlim,ylim=ylim,D.cov=D.cov,cellArea=cellArea,n.cells=n.cells,
                   res=res,n.tel.inds=data$n.tel.inds,n.tel.years=data$n.tel.years,
                   n.locs.ind=data$n.locs.ind,tel.ID=data$tel.ID,tel.year=data$tel.year,
@@ -307,22 +307,22 @@ z.super.ups <- round(M*0.25) #how many z.super update proposals per iteration?
 #loop here bc potentially different numbers of traps to vectorize in each year
 y1.nodes <- pd1.nodes <- c()
 y2.nodes <- pd2.nodes <- c()
-for(g in 1:n.year){
+for(g in 1:n.primary){
   y1.nodes <- c(y1.nodes,Rmodel$expandNodeNames(paste0("y1[1:",M,",",g,",1:",J1[g],"]"))) #if you change y structure, change here
   pd1.nodes <- c(pd1.nodes,Rmodel$expandNodeNames(paste0("pd1[1:",M,",",g,",1:",J1[g],"]"))) #if you change y structure, change here
   y2.nodes <- c(y2.nodes,Rmodel$expandNodeNames(paste0("y2[1:",M,",",g,",1:",J2[g],"]"))) #if you change y structure, change here
   pd2.nodes <- c(pd2.nodes,Rmodel$expandNodeNames(paste0("pd2[1:",M,",",g,",1:",J2[g],"]"))) #if you change y structure, change here
 }
 N.nodes <- Rmodel$expandNodeNames(paste0("N"))
-N.survive.nodes <- Rmodel$expandNodeNames(paste0("N.survive[1:",n.year-1,"]"))
-N.recruit.nodes <- Rmodel$expandNodeNames(paste0("N.recruit[1:",n.year-1,"]"))
-ER.nodes <- Rmodel$expandNodeNames(paste0("ER[1:",n.year-1,"]"))
+N.survive.nodes <- Rmodel$expandNodeNames(paste0("N.survive[1:",n.primary-1,"]"))
+N.recruit.nodes <- Rmodel$expandNodeNames(paste0("N.recruit[1:",n.primary-1,"]"))
+ER.nodes <- Rmodel$expandNodeNames(paste0("ER[1:",n.primary-1,"]"))
 z.nodes <- Rmodel$expandNodeNames(paste0("z[1:",M,",1]"))
 tel.z.states.nodes <- Rmodel$expandNodeNames(paste0("tel.z.states[1:",M,",1]"))
 calcNodes <- c(N.nodes,ER.nodes,N.recruit.nodes,N.survive.nodes,pd1.nodes,y1.nodes,
                pd2.nodes,y2.nodes,z.nodes,tel.z.states.nodes)
 conf$addSampler(target = c("z"),
-                type = 'zSampler',control = list(M=M,n.year=n.year,J1=J1,J2=J2,
+                type = 'zSampler',control = list(M=M,n.primary=n.primary,J1=J1,J2=J2,
                                                  sampled.years.m1=sampled.years.m1,sampled.years.m2=sampled.years.m2,
                                                  n.sampled.m1=n.sampled.m1,n.sampled.m2=n.sampled.m2,
                                                  z.obs=nimbuild$z.obs,z.super.ups=z.super.ups,
@@ -376,10 +376,10 @@ methods <- ifelse(K1 > 0 & K2 > 0, "C",
                          ifelse(K2 > 0, "B", NA)))
 
 library(vioplot)
-vioplot(mvSamples[-c(1:500),3:(n.year+2)],ylim=c(0,200),xlim=c(-0.5,n.year+0.5))
+vioplot(mvSamples[-c(1:500),3:(n.primary+2)],ylim=c(0,200),xlim=c(-0.5,n.primary+0.5))
 mtext("Method(s) Used",3,at=0,line=2)
-mtext(methods,3,at=1:n.year,line=2)
+mtext(methods,3,at=1:n.primary,line=2)
 mtext("cols.deployed",3,at=0,line=1)
-mtext(cols.deployed,3,at=1:n.year,line=1)
+mtext(cols.deployed,3,at=1:n.primary,line=1)
 mtext("cols.active",3,at=0,line=0)
-mtext(cols.active,3,at=1:n.year,line=0)
+mtext(cols.active,3,at=1:n.primary,line=0)
