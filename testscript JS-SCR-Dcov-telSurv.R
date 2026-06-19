@@ -189,7 +189,7 @@ for(g in 1:n.primary){
       if(length(tel.idx)>0){
         s <- data$s[kept.idx,]
         # find which telemetry year index corresponds to year g
-        tel.g.idx <- which(data$tel.year[tel.idx,]==g)
+        tel.g.idx <- which(data$tel.session[tel.idx,]==g)
         if(length(tel.g.idx)>0){
           for(l in 1:data$n.locs.ind[tel.idx,tel.g.idx]){
             lines(x=c(s[1],data$locs[tel.idx,tel.g.idx,l,1]),
@@ -250,7 +250,7 @@ n.cells.y <- data$n.cells.y
 #I should change this to plot by session and link ACs to traps
 # plot(X.all,xlim=xlim,ylim=ylim,pch=4)
 # for(i in 1:data$n.tel.inds){
-#   for(g in 1:data$n.tel.years[i]){
+#   for(g in 1:data$n.tel.sessions[i]){
 #     for(l in 1:data$n.locs.ind[i,g]){
 #       lines(x=c(nimbuild$s.init[data$tel.ID[i],1],data$locs[i,g,l,1]),
 #             y=c(nimbuild$s.init[data$tel.ID[i],2],data$locs[i,g,l,2]),col="gray80")
@@ -270,8 +270,8 @@ n.sampled.m2 <- length(sampled.years.m2)
 #might want to center D.cov here. Simulated D.cov in this testscript is already effectively centered.
 constants <- list(n.primary=n.primary,M=M,J1=J1,J2=J2,K1D1=nimbuild$K1D1,K1D2=nimbuild$K1D2,
                   xlim=xlim,ylim=ylim,D.cov=D.cov,cellArea=cellArea,n.cells=n.cells,
-                  res=res,n.tel.inds=data$n.tel.inds,n.tel.years=data$n.tel.years,
-                  n.locs.ind=data$n.locs.ind,tel.ID=data$tel.ID,tel.year=data$tel.year,
+                  res=res,n.tel.inds=data$n.tel.inds,n.tel.sessions=data$n.tel.sessions,
+                  n.locs.ind=data$n.locs.ind,tel.ID=data$tel.ID,tel.session=data$tel.session,
                   sampled.years.m1=sampled.years.m1,sampled.years.m2=sampled.years.m2,
                   n.sampled.m1=n.sampled.m1,n.sampled.m2=n.sampled.m2)
 

@@ -96,7 +96,7 @@ init.Spatial.IPM <- function(data,inits=NA,M=NA){
     if(i%in%data$tel.ID){
       these.locs <- matrix(0,nrow=0,ncol=2) #get telemetry locs across years for tel.ID i
       this.tel.ind <- which(data$tel.ID==i)
-      for(g in 1:data$n.tel.years[this.tel.ind]){
+      for(g in 1:data$n.tel.sessions[this.tel.ind]){
         locs.g <- data$locs[this.tel.ind,g,,]
         these.locs <- rbind(these.locs,locs.g)
       }

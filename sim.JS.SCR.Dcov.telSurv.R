@@ -144,18 +144,18 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   
   #simulate telemetry locations for all collared years
   if(n.tel.locs>0&sum(y1)>0){
-    n.tel.years.vec <- rowSums(tel.z.states==1,na.rm=TRUE)
-    tel.ID <- which(n.tel.years.vec>0)
+    n.tel.sessions.vec <- rowSums(tel.z.states==1,na.rm=TRUE)
+    tel.ID <- which(n.tel.sessions.vec>0)
     n.tel.inds <- length(tel.ID)
     if(n.tel.inds>0){
-      n.tel.years <- n.tel.years.vec[tel.ID] #length n.tel.inds
-      max.n.tel.years <- max(n.tel.years)
-      locs <- array(NA,dim=c(n.tel.inds,max.n.tel.years,n.tel.locs,2))
-      n.locs.ind <- matrix(0,n.tel.inds,max.n.tel.years)
-      tel.year <- matrix(NA,n.tel.inds,max.n.tel.years)
+      n.tel.sessions <- n.tel.sessions.vec[tel.ID] #length n.tel.inds
+      max.n.tel.sessions <- max(n.tel.sessions)
+      locs <- array(NA,dim=c(n.tel.inds,max.n.tel.sessions,n.tel.locs,2))
+      n.locs.ind <- matrix(0,n.tel.inds,max.n.tel.sessions)
+      tel.session <- matrix(NA,n.tel.inds,max.n.tel.sessions)
       for(i in 1:n.tel.inds){
         collared.years <- which(tel.z.states[tel.ID[i],]==1)
-        tel.year[i,1:length(collared.years)] <- collared.years
+        tel.session[i,1:length(collared.years)] <- collared.years
         for(gy in 1:length(collared.years)){
           g <- collared.years[gy]
           locs[i,gy,1:n.tel.locs,1] <- rnorm(n.tel.locs,s[tel.ID[i],1],sigma[g])
@@ -164,17 +164,17 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
         }
       }
     }else{
-      locs <- tel.ID <- tel.year <- NA
+      locs <- tel.ID <- tel.session <- NA
       n.tel.inds <- 0
       n.locs.ind <- NA
-      n.tel.years <- NA
+      n.tel.sessions <- NA
     }
   }else{
     print("no individuals captured, no telemetry")
-    locs <- tel.ID <- tel.year <- NA
+    locs <- tel.ID <- tel.session <- NA
     n.tel.inds <- 0
     n.locs.ind <- NA
-    n.tel.years <- NA
+    n.tel.sessions <- NA
   }
 
   #store true data for model building/debugging
@@ -203,8 +203,8 @@ sim.JS.SCR.Dcov.telSurv <- function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,
   
   return(list(y1=y1,y2=y2,N=N,N.recruit=N.recruit,N.survive=N.survive,
               X1=X1,X2=X2,J1=J1,J2=J2,K1=K1,K2=K2,n.primary=n.primary,
-              tel.z.states=tel.z.states,locs=locs,n.tel.inds=n.tel.inds,n.tel.years=n.tel.years,
-              n.locs.ind=n.locs.ind,tel.ID=tel.ID,tel.ID.g=tel.ID.g,tel.year=tel.year,
+              tel.z.states=tel.z.states,locs=locs,n.tel.inds=n.tel.inds,n.tel.sessions=n.tel.sessions,
+              n.locs.ind=n.locs.ind,tel.ID=tel.ID,tel.ID.g=tel.ID.g,tel.session=tel.session,
               xlim=xlim,ylim=ylim,x.vals=x.vals,y.vals=y.vals,dSS=dSS,cells=cells,
               n.cells=n.cells,n.cells.x=n.cells.x,n.cells.y=n.cells.y,s.cell=s.cell,s=s,
               D.cov=D.cov,InSS=InSS,res=res,cellArea=cellArea,N=N,lambda.y1=lambda.y1,

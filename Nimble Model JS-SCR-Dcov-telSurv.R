@@ -94,8 +94,8 @@ NimModel <- nimbleCode({
   }
   #Telemetry informs activity centers and sigma
   for(i in 1:n.tel.inds){
-    for(g in 1:n.tel.years[i]){
-      locs[i,g,1:n.locs.ind[i,g],1:2] ~ dNormVector(s=s[tel.ID[i],1:2],sigma=sigma[tel.year[i,g]],
+    for(g in 1:n.tel.sessions[i]){
+      locs[i,g,1:n.locs.ind[i,g],1:2] ~ dNormVector(s=s[tel.ID[i],1:2],sigma=sigma[tel.session[i,g]],
                                                     n.locs.ind=n.locs.ind[i,g])
     }
   }
